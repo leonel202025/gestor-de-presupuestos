@@ -1,2 +1,26 @@
 # Ignorar el archivo JSON de presupuestos
 presupuestos.json
+
+# Ignorar archivos y carpetas generados por PyInstaller
+dist/
+build/
+*.spec
+
+# Ignorar archivos de entorno virtual
+env/
+venv/
+.env
+
+# Ignorar archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar archivos de configuración de IDE
+.vscode/
+.idea/
+
+# Ignorar archivos de logs y caché
+*.log
+*.cache
