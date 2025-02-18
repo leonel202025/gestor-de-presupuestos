@@ -270,61 +270,72 @@ class PresupuestoApp:
 
         def guardar_pago():
             try:
+                # Obtener el monto del pago
                 nuevo_pago_texto = entry_pago.get().strip()
                 nuevo_pago = float(re.sub(r"[^\d]", "", nuevo_pago_texto))
 
                 if nuevo_pago <= 0:
                     raise ValueError("El pago debe ser positivo.")
 
+                # Obtener la fecha manual
+                fecha_manual = entry_fecha.get().strip()
+                if not re.match(r"^\d{2}/\d{2}/\d{4}$", fecha_manual):
+                    raise ValueError("La fecha debe tener el formato DD/MM/AAAA.")
+
+                # Actualizar la deuda del cliente
                 for presupuesto in self.presupuestos:
                     if presupuesto["Cliente"] == cliente:
                         presupuesto["Deuda"] -= nuevo_pago
                         if presupuesto["Deuda"] < 0:
                             presupuesto["Deuda"] = 0.0
                         break
-                
-                # Verifica si el cliente tiene historial de pagos, si no, lo crea
+
+                # Verificar si el cliente tiene historial de pagos, si no, lo crea
                 if cliente not in self.historial_pagos:
                     self.historial_pagos[cliente] = []
 
-                # Agrega el nuevo pago al historial del cliente
-                fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+                # Agregar el nuevo pago al historial del cliente
                 self.historial_pagos[cliente].append({
-                "monto": nuevo_pago,
-                "fecha": fecha_hora
+                    "monto": nuevo_pago,
+                    "fecha": fecha_manual  # Usar la fecha manual ingresada
                 })
 
-                # Guarda los datos en el archivo JSON
+                # Guardar los datos en el archivo JSON
                 self.guardar_datos()
 
-                # Actualiza la tabla y cierra la ventana de pago
+                # Actualizar la tabla y cerrar la ventana de pago
                 self.cargar_datos_tabla()
                 self.habilitar_botones(None)  # Actualizar botones después de registrar el pago
                 ventana_pago.destroy()
                 messagebox.showinfo("Éxito", "Pago registrado exitosamente.")
-            except ValueError:
-                messagebox.showerror("Error", "Ingrese un pago válido.")
+            except ValueError as e:
+                messagebox.showerror("Error", str(e))
             except Exception as e:
                 messagebox.showerror("Error", f"Error inesperado: {e}")
 
+        # Crear la ventana de pago
         ventana_pago = tk.Toplevel(self.root)
         ventana_pago.title("Registrar Pago")
-        self.centrar_ventana(ventana_pago, 350, 150)
-        
-        
-        
-        ttk.Label(ventana_pago, text="Monto del Pago:", font=("Arial", 14)).pack(pady=(20,5))
+        self.centrar_ventana(ventana_pago, 350, 230)  # Ajustar el tamaño de la ventana
+
+        # Campo para el monto del pago
+        ttk.Label(ventana_pago, text="Monto del Pago:", font=("Arial", 14)).pack(pady=(20, 5))
         entry_pago = ttk.Entry(ventana_pago, font=("Arial", 14), width=20)
         entry_pago.pack(pady=5)
+        entry_pago.insert(0, "$")  # Mostrar el signo "$" al principio del campo
 
-        # Mostrar el signo "$" al principio del campo
-        entry_pago.insert(0, "$")
-        
-        # Asociamos la tecla Enter al botón de guardar pago
-        entry_pago.bind("<Return>", lambda event: guardar_pago())
-        
+        # Campo para la fecha manual
+        ttk.Label(ventana_pago, text="Fecha del Pago:", font=("Arial", 14)).pack(pady=(10, 5))
+        entry_fecha = ttk.Entry(ventana_pago, font=("Arial", 14), width=20)
+        entry_fecha.pack(pady=5)
+
+        # Botón para registrar el pago
         ttk.Button(ventana_pago, text="Registrar Pago", command=guardar_pago, width=20).pack(pady=10)
-        
+
+        # Asociar la tecla Enter al botón de guardar pago
+        entry_pago.bind("<Return>", lambda event: guardar_pago())
+        entry_fecha.bind("<Return>", lambda event: guardar_pago())
+
         entry_pago.focus()
 
     def ver_historial_pagos(self):
@@ -352,13 +363,12 @@ class PresupuestoApp:
         tabla_historial.pack(fill=tk.BOTH, expand=True)
 
         for pago in historial:
-         tabla_historial.insert("", "end", values=(f"${int(pago['monto']):,}".replace(",", "."), pago['fecha']))
-
+            tabla_historial.insert("", "end", values=(f"${int(pago['monto']):,}".replace(",", "."), pago['fecha']))
 
     def eliminar_cliente(self):
         seleccion = self.tabla.selection()
         if not seleccion:
-         return
+            return
 
         cliente = self.tabla.item(seleccion[0])["values"][0]
     
@@ -385,7 +395,6 @@ class PresupuestoApp:
 
         ttk.Button(ventana_eliminacion, text="Eliminar", command=confirmar_eliminacion, width=20).pack(pady=10)
         ttk.Button(ventana_eliminacion, text="Cancelar", command=ventana_eliminacion.destroy, width=20).pack(pady=10)
-
 
     def mostrar_menu(self):
         self.tabla_frame.pack_forget()
